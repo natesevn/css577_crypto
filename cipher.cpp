@@ -10,7 +10,7 @@ using namespace std;
 
 Cipher::Cipher(unsigned char* key) {
 	cipherkey = key;
-	cipher = aes256;
+	cipher = aes2;
 }
 
 int Cipher::encrypt(unsigned char* plaintext, unsigned char* ciphertext) {

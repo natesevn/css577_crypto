@@ -8,35 +8,51 @@
 
 using namespace std;
 
-Cipher::Cipher(unsigned char* key) {
+Cipher::Cipher(unsigned char* key, string encalgo) {
 	cipherkey = key;
-	cipher = aes2;
+	
+	algotype = EVP_aes_128_cbc();
+	if(encalgo == "aes128") {
+		algotype = EVP_aes_128_cbc();
+	} else if(encalgo == "aes256") {
+		algotype = EVP_aes_256_cbc();
+	} else if(encalgo == "3des") {
+		algotype = EVP_des_ede3_cbc();
+	} 
 }
 
-int Cipher::encrypt(unsigned char* plaintext, unsigned char* ciphertext) {
+int Cipher::encrypt(unsigned char* plaintext, unsigned char* ciphertext, int expectedLen) {
 	unsigned char *key = cipherkey;
 	unsigned char *iv = (unsigned char *)"0123456789012345";
 
+	unsigned char *res = new unsigned char[expectedLen];
 	int ciphertext_len;
 	ciphertext_len = encryptStuff(plaintext, strlen ((char *)plaintext), key, iv,
-                            ciphertext);
+                            algotype, res);
 
-	return 0;
+	memcpy(ciphertext, res, ciphertext_len);
+	delete[] res;
+
+	return ciphertext_len;
 }
 
-int Cipher::decrypt(unsigned char* plaintext, unsigned char* ciphertext) {
+int Cipher::decrypt(unsigned char* plaintext, unsigned char* ciphertext, int ciphertextLen) {
 	unsigned char *key = cipherkey;
 	unsigned char *iv = (unsigned char *)"0123456789012345";
 
+	unsigned char *res = new unsigned char[ciphertextLen];
 	int decryptedtext_len;
-	decryptedtext_len = decryptStuff(ciphertext, strlen ((char *)ciphertext), key, iv,
-    plaintext);
+	decryptedtext_len = decryptStuff(ciphertext, ciphertextLen, key, iv,
+    						algotype, res);
 
-	return 0;
+	memcpy(plaintext, res, decryptedtext_len);
+	delete[] res;
+
+	return decryptedtext_len;
 }
 
 int Cipher::decryptStuff(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
-  unsigned char *iv, unsigned char *plaintext) {
+  unsigned char *iv, const EVP_CIPHER* algo, unsigned char *plaintext) {
 	EVP_CIPHER_CTX *ctx;
 
 	int len;
@@ -47,7 +63,7 @@ int Cipher::decryptStuff(unsigned char *ciphertext, int ciphertext_len, unsigned
 	  	handleErrors();
 
 	// Initialize decryption operation
-	if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
+	if(1 != EVP_DecryptInit_ex(ctx, algo, NULL, key, iv))
     	handleErrors();
 
 	// Decrypt given message to provided output
@@ -67,7 +83,7 @@ int Cipher::decryptStuff(unsigned char *ciphertext, int ciphertext_len, unsigned
 }
 
 int Cipher::encryptStuff(unsigned char *plaintext, int plaintext_len, unsigned char *key,
-  unsigned char *iv, unsigned char *ciphertext) {
+  unsigned char *iv, const EVP_CIPHER* algo, unsigned char *ciphertext) {
 	EVP_CIPHER_CTX *ctx;
 
 	int len;
@@ -78,7 +94,7 @@ int Cipher::encryptStuff(unsigned char *plaintext, int plaintext_len, unsigned c
 		handleErrors();
 
 	// Initialize encryption operation
-	if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
+	if(1 != EVP_EncryptInit_ex(ctx, algo, NULL, key, iv))
     	handleErrors();
 
 	// Encrypt given message to provided output

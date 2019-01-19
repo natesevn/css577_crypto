@@ -44,8 +44,10 @@ int Cipher::decrypt(unsigned char* plaintext, unsigned char* ciphertext, int cip
 	int decryptedtext_len;
 	decryptedtext_len = decryptStuff(ciphertext, ciphertextLen, key, iv,
     						algotype, res);
-
 	memcpy(plaintext, res, decryptedtext_len);
+
+	// make sure the string is null terminated to avoid reading too much data
+	plaintext[decryptedtext_len] = '\0';
 	delete[] res;
 
 	return decryptedtext_len;

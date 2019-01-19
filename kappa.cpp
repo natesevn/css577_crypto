@@ -112,12 +112,12 @@ int main()
 	cout << endl;
 
 	/* ==== DECRYPTING ===== */
-	unsigned char *result = new unsigned char[strlen((char*)plaintext)];
+	unsigned char *result = new unsigned char[strlen((char*)plaintext)+1];
+	unsigned char *resultk = new unsigned char[strlen((char*)plaintext)];
 
 	// 3des different block size wtf???
 	int actualPlainLength = cipher.decrypt(result, ciphertext, actualCipherLength);
 	cout << "decrypted text is: " << result << endl;
-
 
 	delete[] key;
 	delete[] hmacKey;

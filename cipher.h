@@ -11,7 +11,7 @@ class Cipher {
 		int encrypt(unsigned char* plaintext, unsigned char* ciphertext, int expectedLen);
 		int decrypt(unsigned char* plaintext, unsigned char* ciphertext, int ciphertextLen);
 		
-		Cipher(unsigned char* key, string encalgo);
+		Cipher(unsigned char* key, unsigned char* iv, string encalgo);
 
 		static const int aes128KeySize = 16;
 		static const int aes256KeySize = 32;
@@ -24,6 +24,7 @@ class Cipher {
 
 	private:
 		unsigned char *cipherkey;
+		unsigned char *cipheriv;
 		const EVP_CIPHER* algotype;
 
 		void handleErrors(void);

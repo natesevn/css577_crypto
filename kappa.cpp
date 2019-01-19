@@ -2,6 +2,7 @@
 #include <string>
 #include <cstring>
 #include <openssl/evp.h>
+#include <openssl/rand.h>
 #include <keygen.h>
 #include <cipher.h>
 
@@ -89,7 +90,7 @@ int main()
 	}
 	cout << endl;
 
-	/* ===== ENCRYPTING ===== */
+	/* ===== GETTING DATA TO ENCRYPT ===== */
 	string mytext;
 	cout << "what to encrypt? ";
 	cin.ignore();
@@ -98,19 +99,28 @@ int main()
 	unsigned char *plaintext = new unsigned char[mytext.length() + 1];
 	strcpy( (char* )plaintext, mytext.c_str());
 
-	// n + 8 - (n % 8)
+	/* ===== PREPARING CIPHER OBJECT ===== */
+	unsigned char *iv = new unsigned char[BLOCK_SIZE];
+	if (!RAND_bytes(iv, sizeof iv)) {
+    	/* OpenSSL reports a failure, act accordingly */
+		cout << "Error generating IV for encryption" << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	Cipher cipher(cipherKey, iv, encalgo);
+
+	/* ===== ENCRYPTING ===== */
+	// cipher len =  n + 8 - (n % 8)
 	int ciphertext_len = (strlen((char*)plaintext) + BLOCK_SIZE) - (strlen((char*)plaintext)%BLOCK_SIZE);
 	unsigned char *ciphertext = new unsigned char[ciphertext_len];
 
-	Cipher cipher(cipherKey, encalgo);
 	int actualCipherLength = cipher.encrypt(plaintext, ciphertext, ciphertext_len);
 	cout << "cipher text is: " << endl;
 	BIO_dump_fp (stdout, (const char *)ciphertext, actualCipherLength);
 	cout << endl;
 
 	/* ==== DECRYPTING ===== */
-	unsigned char *result = new unsigned char[strlen((char*)plaintext)+1];
-	unsigned char *resultk = new unsigned char[strlen((char*)plaintext)];
+	unsigned char *result = new unsigned char[strlen((char*)plaintext)];
 
 	int actualPlainLength = cipher.decrypt(result, ciphertext, actualCipherLength);
 	cout << "decrypted text is: " << result << endl;
@@ -119,6 +129,7 @@ int main()
 	delete[] hmacKey;
 	delete[] cipherKey;
 
+	delete[] iv;
 	delete[] plaintext;
 	delete[] ciphertext;
 	delete[] result;

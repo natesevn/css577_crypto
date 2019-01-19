@@ -8,8 +8,9 @@
 
 using namespace std;
 
-Cipher::Cipher(unsigned char* key, string encalgo) {
+Cipher::Cipher(unsigned char* key, unsigned char* iv, string encalgo) {
 	cipherkey = key;
+	cipheriv = iv;
 	
 	algotype = EVP_aes_128_cbc();
 	if(encalgo == "aes128") {
@@ -23,7 +24,7 @@ Cipher::Cipher(unsigned char* key, string encalgo) {
 
 int Cipher::encrypt(unsigned char* plaintext, unsigned char* ciphertext, int expectedLen) {
 	unsigned char *key = cipherkey;
-	unsigned char *iv = (unsigned char *)"0123456789012345";
+	unsigned char *iv = cipheriv;
 
 	unsigned char *res = new unsigned char[expectedLen];
 	int ciphertext_len;
@@ -38,7 +39,7 @@ int Cipher::encrypt(unsigned char* plaintext, unsigned char* ciphertext, int exp
 
 int Cipher::decrypt(unsigned char* plaintext, unsigned char* ciphertext, int ciphertextLen) {
 	unsigned char *key = cipherkey;
-	unsigned char *iv = (unsigned char *)"0123456789012345";
+	unsigned char *iv = cipheriv;
 
 	unsigned char *res = new unsigned char[ciphertextLen];
 	int decryptedtext_len;
@@ -49,7 +50,7 @@ int Cipher::decrypt(unsigned char* plaintext, unsigned char* ciphertext, int cip
 	// make sure the string is null terminated to avoid reading too much data
 	plaintext[decryptedtext_len] = '\0';
 	delete[] res;
-
+	
 	return decryptedtext_len;
 }
 

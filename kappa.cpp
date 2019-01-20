@@ -66,13 +66,12 @@ int main()
 	/* ===== GETTING MASTER KEY ===== */
 	unsigned char* key = new unsigned char[MASTER_KEY_LEN];
 	status = Keygen::getMasterKey(pwd, MASTER_KEY_LEN, shaver, key);
-	char* masterKey = new char[MASTER_KEY_LEN+1];
+	char* masterKey = new char[MASTER_KEY_LEN+1]();
 	memcpy(masterKey, key, MASTER_KEY_LEN);
 	cout << "converted out: ";
 	for(i=0; i<MASTER_KEY_LEN; i++) {
 		printf("%x", masterKey[i]&0xFF);
 	}
-	masterKey[MASTER_KEY_LEN] = '\0';
 	cout << endl;
 
 	/* ===== GETTING HMAC KEY ===== */
@@ -129,7 +128,6 @@ int main()
 	unsigned char *result = new unsigned char[strlen((char*)plaintext)+1];
 
 	int actualPlainLength = cipher.decrypt(result, ciphertext, actualCipherLength);
-	result[actualPlainLength] = '\0';
 	cout << "decrypted text is: " << result << endl;
 
 	/* ===== GET HMAC ===== */

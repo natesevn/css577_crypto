@@ -22,7 +22,9 @@ int Keygen::getKey(char pwd[], unsigned char salt[], size_t keysize, int iter, s
 	}
 	
 	// use pbkdf2 to get key
-    if( PKCS5_PBKDF2_HMAC(pwd, strlen(pwd), salt, strlen((char*)salt), iter, sha, keysize, out) != 0 )
+	int status = 0;
+	status = PKCS5_PBKDF2_HMAC(pwd, strlen(pwd), salt, strlen((char*)salt), iter, sha, keysize, out);
+    if( status != 0 )
     {
 		memcpy(key, out, keysize);
 		delete[] out;

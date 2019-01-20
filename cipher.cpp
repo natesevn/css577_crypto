@@ -2,23 +2,34 @@
 #include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
+#include <openssl/hmac.h>
 #include <string>
 #include <cstring>
 #include <iostream>
 
 using namespace std;
 
-Cipher::Cipher(unsigned char* key, unsigned char* iv, string encalgo) {
-	cipherkey = key;
+Cipher::Cipher(unsigned char* ckey, unsigned char* hkey, unsigned char* iv, string encalgo) {
+	cipherkey = ckey;
+	hmackey = hkey;
 	cipheriv = iv;
 	
 	algotype = EVP_aes_128_cbc();
 	if(encalgo == "aes128") {
 		algotype = EVP_aes_128_cbc();
+		keySize = aes128KeySize;
+		blockSize = aesBlockSize;
+		ivSize = aesIVSize;
 	} else if(encalgo == "aes256") {
 		algotype = EVP_aes_256_cbc();
+		keySize = aes256KeySize;
+		blockSize = aesBlockSize;
+		ivSize = aesIVSize;
 	} else if(encalgo == "3des") {
 		algotype = EVP_des_ede3_cbc();
+		keySize = desKeySize;
+		blockSize = desBlockSize;
+		ivSize = desIVSize;
 	} 
 }
 
@@ -52,6 +63,28 @@ int Cipher::decrypt(unsigned char* plaintext, unsigned char* ciphertext, int cip
 	delete[] res;
 	
 	return decryptedtext_len;
+}
+
+int Cipher::getHmac(unsigned char* ciphertext, int ciphertextLen, unsigned char* hmac) {
+	//todo add iv to cipher
+	unsigned char* key = hmackey;
+
+  	unsigned char* result = new unsigned char[EVP_MAX_MD_SIZE];
+	unsigned int resultLen = 0;
+
+	// Concatenate IV + ciphertext;
+	unsigned char* data = new unsigned char[ivSize + ciphertextLen];
+	memcpy(data, cipheriv, ivSize);
+	memcpy(data+ivSize, ciphertext, ciphertextLen);
+ 
+  	HMAC(EVP_sha256(), key, keySize, data, ciphertextLen, result, &resultLen);
+
+	memcpy(hmac, result, resultLen);
+
+	delete[] result;
+	delete[] data;
+
+	return resultLen;
 }
 
 int Cipher::decryptStuff(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,

@@ -73,10 +73,10 @@ int main()
 	cout << endl;
 
 	/* ===== GETTING HMAC KEY ===== */
-	unsigned char* hmacKey = new unsigned char[KEY_SIZE];
-	status = Keygen::getHMACKey(masterKey, KEY_SIZE, shaver, hmacKey);
+	unsigned char* hmacKey = new unsigned char[MASTER_KEY_LEN];
+	status = Keygen::getHMACKey(masterKey, MASTER_KEY_LEN, shaver, hmacKey);
 	cout << "hmac key: ";
-	for(i=0; i<KEY_SIZE; i++) {
+	for(i=0; i<MASTER_KEY_LEN; i++) {
 		cout << hex << int(hmacKey[i]);
 	}
 	cout << endl;
@@ -100,14 +100,17 @@ int main()
 	strcpy( (char* )plaintext, mytext.c_str());
 
 	/* ===== PREPARING CIPHER OBJECT ===== */
-	unsigned char *iv = new unsigned char[BLOCK_SIZE];
-	if (!RAND_bytes(iv, sizeof iv)) {
+	unsigned char *iv = new unsigned char[IV_SIZE];
+	if (!RAND_bytes(iv, IV_SIZE)) {
     	/* OpenSSL reports a failure, act accordingly */
 		cout << "Error generating IV for encryption" << endl;
 		exit(EXIT_FAILURE);
 	}
+	cout << "iv is: " << endl;
+	BIO_dump_fp (stdout, (const char *)iv, IV_SIZE);
+	cout << endl;
 
-	Cipher cipher(cipherKey, iv, encalgo);
+	Cipher cipher(cipherKey, hmacKey, iv, encalgo);
 
 	/* ===== ENCRYPTING ===== */
 	// cipher len =  n + 8 - (n % 8)
@@ -119,11 +122,18 @@ int main()
 	BIO_dump_fp (stdout, (const char *)ciphertext, actualCipherLength);
 	cout << endl;
 
-	/* ==== DECRYPTING ===== */
+	/* ===== DECRYPTING ===== */
 	unsigned char *result = new unsigned char[strlen((char*)plaintext)];
 
 	int actualPlainLength = cipher.decrypt(result, ciphertext, actualCipherLength);
 	cout << "decrypted text is: " << result << endl;
+
+	/* ===== GET HMAC ===== */
+	unsigned char *hmac = new unsigned char[32];
+	int hmacLen = cipher.getHmac(ciphertext, actualCipherLength, hmac);
+	cout << "hmac is: " << endl;
+	BIO_dump_fp (stdout, (const char *)hmac, hmacLen);
+	cout << endl;
 
 	delete[] key;
 	delete[] hmacKey;
@@ -133,6 +143,7 @@ int main()
 	delete[] plaintext;
 	delete[] ciphertext;
 	delete[] result;
+	delete[] hmac;
 
     return 0;
 }

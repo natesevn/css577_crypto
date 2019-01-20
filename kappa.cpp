@@ -5,6 +5,7 @@
 #include <openssl/rand.h>
 #include <keygen.h>
 #include <cipher.h>
+#include <formatter.h>
 
 #define MASTER_KEY_LEN  32
 
@@ -134,6 +135,11 @@ int main()
 	cout << "hmac is: " << endl;
 	BIO_dump_fp (stdout, (const char *)hmac, hmacLen);
 	cout << endl;
+
+	/* ===== GET FORMATTED STRING ===== */
+	string formattedString = Formatter::getFormattedData(shaver, encalgo, hmacLen, actualCipherLength, IV_SIZE,
+		hmac, ciphertext, iv);
+	cout << "formatted string is: " << formattedString << endl;
 
 	delete[] key;
 	delete[] hmacKey;

@@ -141,15 +141,33 @@ int main()
 		hmac, ciphertext, iv);
 	cout << "formatted string is: " << formattedString << endl;
 
-	delete[] key;
-	delete[] hmacKey;
-	delete[] cipherKey;
+	/* ===== PARSE FORMATTED STRING ===== */
+	string test1;
+	string test2;
+	unsigned char* test3 = new unsigned char[hmacLen];
+	unsigned char* test4 = new unsigned char[IV_SIZE];
+	unsigned char* test5 = new unsigned char[actualCipherLength];
+	string test6;
+	int test = Formatter::parseFormattedData(formattedString, test1, test2, test3, test4, test5, test6);
 
-	delete[] iv;
-	delete[] plaintext;
-	delete[] ciphertext;
-	delete[] result;
-	delete[] hmac;
+	cout << "decoded hmac is: " << endl;
+	BIO_dump_fp (stdout, (const char*)test3, hmacLen);
+	cout << "decoded iv is: " << endl;
+	BIO_dump_fp (stdout, (const char*)test4, IV_SIZE);
+	cout << "decoded cipher is: " << endl;
+	BIO_dump_fp (stdout, (const char*)test5, stoi(test6));
+
+	//cout << test1 << " " << test2 << " " << test3 << " " << test4 << " " <<test5 << " " <<test6<<endl;
+
+	//delete[] key;
+	//delete[] hmacKey;
+	//delete[] cipherKey;
+
+	//delete[] iv;
+	//delete[] plaintext;
+	//delete[] ciphertext;
+	//delete[] result;
+	//delete[] hmac;
 
     return 0;
 }

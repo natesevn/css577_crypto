@@ -12,6 +12,11 @@ class Formatter {
 				int hmacLen, int cipherLen, int ivLen,
 				unsigned char* hmac, unsigned char* ciphertext, unsigned char* iv);
 
+		static int parseFormattedData(string formattedData,
+				string& hashver, string& encalgo,
+				unsigned char* hmac, unsigned char* cipher, unsigned char* iv, 
+				string& cipherLen);
+
 };
 
 #endif /* FORMATTER_H */

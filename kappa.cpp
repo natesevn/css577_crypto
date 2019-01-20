@@ -8,6 +8,7 @@
 #include <formatter.h>
 
 #define MASTER_KEY_LEN  32
+#define HMAC_SIZE 32
 
 using namespace std;
 
@@ -65,12 +66,13 @@ int main()
 	/* ===== GETTING MASTER KEY ===== */
 	unsigned char* key = new unsigned char[MASTER_KEY_LEN];
 	status = Keygen::getMasterKey(pwd, MASTER_KEY_LEN, shaver, key);
-	char* masterKey = (char*)malloc(MASTER_KEY_LEN);
+	char* masterKey = new char[MASTER_KEY_LEN+1];
 	memcpy(masterKey, key, MASTER_KEY_LEN);
 	cout << "converted out: ";
 	for(i=0; i<MASTER_KEY_LEN; i++) {
 		printf("%x", masterKey[i]&0xFF);
 	}
+	masterKey[MASTER_KEY_LEN] = '\0';
 	cout << endl;
 
 	/* ===== GETTING HMAC KEY ===== */
@@ -124,13 +126,14 @@ int main()
 	cout << endl;
 
 	/* ===== DECRYPTING ===== */
-	unsigned char *result = new unsigned char[strlen((char*)plaintext)];
+	unsigned char *result = new unsigned char[strlen((char*)plaintext)+1];
 
 	int actualPlainLength = cipher.decrypt(result, ciphertext, actualCipherLength);
+	result[actualPlainLength] = '\0';
 	cout << "decrypted text is: " << result << endl;
 
 	/* ===== GET HMAC ===== */
-	unsigned char *hmac = new unsigned char[32];
+	unsigned char *hmac = new unsigned char[HMAC_SIZE];
 	int hmacLen = cipher.getHmac(ciphertext, actualCipherLength, hmac);
 	cout << "hmac is: " << endl;
 	BIO_dump_fp (stdout, (const char *)hmac, hmacLen);
@@ -144,9 +147,9 @@ int main()
 	/* ===== PARSE FORMATTED STRING ===== */
 	string test1;
 	string test2;
-	unsigned char* test3 = new unsigned char[hmacLen];
-	unsigned char* test4 = new unsigned char[IV_SIZE];
-	unsigned char* test5 = new unsigned char[actualCipherLength];
+	unsigned char* test3 = new unsigned char[hmacLen+2];
+	unsigned char* test4 = new unsigned char[IV_SIZE+2];
+	unsigned char* test5 = new unsigned char[actualCipherLength+2];
 	string test6;
 	int test = Formatter::parseFormattedData(formattedString, test1, test2, test3, test4, test5, test6);
 
@@ -157,17 +160,20 @@ int main()
 	cout << "decoded cipher is: " << endl;
 	BIO_dump_fp (stdout, (const char*)test5, stoi(test6));
 
-	//cout << test1 << " " << test2 << " " << test3 << " " << test4 << " " <<test5 << " " <<test6<<endl;
+	delete[] key;
+	delete[] masterKey;
+	delete[] hmacKey;
+	delete[] cipherKey;
 
-	//delete[] key;
-	//delete[] hmacKey;
-	//delete[] cipherKey;
+	delete[] iv;
+	delete[] plaintext;
+	delete[] ciphertext;
+	delete[] result;
+	delete[] hmac;
 
-	//delete[] iv;
-	//delete[] plaintext;
-	//delete[] ciphertext;
-	//delete[] result;
-	//delete[] hmac;
+	delete[] test3;
+	delete[] test4;
+	delete[] test5;
 
     return 0;
 }

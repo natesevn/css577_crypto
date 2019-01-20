@@ -41,21 +41,21 @@ string Formatter::getFormattedData(string hash, string encalgo,
 
 	// Get b64encoding of hmac in string
 	size = 4*ceil(((double)hmacLen/3));
-	unsigned char *strhmac = new unsigned char[size];
+	unsigned char *strhmac = new unsigned char[size+1];
 	int hmacSize = EVP_EncodeBlock(strhmac, hmac, hmacLen);
 	if(hmacSize == -1) {
 		cout << "ERROR ENCODING HMAC. " << endl;
 	}
 
 	size = 4*ceil(((double)ivLen/3));
-	unsigned char *striv = new unsigned char[size];
+	unsigned char *striv = new unsigned char[size+1];
 	int ivSize = EVP_EncodeBlock(striv, iv, ivLen);
 	if(ivSize == -1) {
 		cout << "ERROR ENCODING IV. " << endl;
 	}
 
 	size = 4*ceil(((double)cipherLen/3));
-	unsigned char *strcipher = new unsigned char[size];
+	unsigned char *strcipher = new unsigned char[size+1];
 	int cipherSize = EVP_EncodeBlock(strcipher, ciphertext, cipherLen);
 	if(cipherSize == -1) {
 		cout << "ERROR ENCODING CIPHER. " << endl;
@@ -64,6 +64,10 @@ string Formatter::getFormattedData(string hash, string encalgo,
 	stringstream ss;
 	ss << hash << ";" << encalgo << ";" << hmacSize << ";" << ivSize << ";" << cipherSize << ";" << strhmac << ";" << striv << ";" << strcipher << ";" << cipherLen;
 	string formattedString = ss.str();
+
+	delete[] strhmac;
+	delete[] striv;
+	delete[] strcipher;
 
 	return formattedString;
 }
@@ -98,33 +102,37 @@ int Formatter::parseFormattedData(string data,
 
 	//get hmac
 	getline(ss, temp, ';');
-	unsigned char *strhmac = new unsigned char[stoi(hmacSize)];
+	unsigned char *strhmac = new unsigned char[stoi(hmacSize)+1];
 	blockSize = EVP_DecodeBlock(strhmac, (unsigned char*)temp.c_str(), stoi(hmacSize));
 	if(blockSize == -1) {
 		cout << "ERROR DECODING HMAC. " << endl;
 	}
-	memcpy(hmac, strhmac, stoi(hmacSize));
+	memcpy(hmac, strhmac, blockSize);
 
 	//get iv
 	getline(ss, temp, ';');
-	unsigned char *striv = new unsigned char[stoi(ivSize)];
+	unsigned char *striv = new unsigned char[stoi(ivSize)+1];
 	blockSize = EVP_DecodeBlock(striv, (unsigned char*)temp.c_str(), stoi(ivSize));
 	if(blockSize == -1) {
 		cout << "ERROR DECODING IV. " << endl;
 	}
-	memcpy(iv, striv, stoi(ivSize));
+	memcpy(iv, striv, blockSize);
 
 	//get cipher
 	getline(ss, temp, ';');
-	unsigned char *strcipher = new unsigned char[stoi(cipherSize)];
+	unsigned char *strcipher = new unsigned char[stoi(cipherSize)+1];
 	blockSize = EVP_DecodeBlock(strcipher, (unsigned char*)temp.c_str(), stoi(cipherSize));
 	if(blockSize == -1) {
 		cout << "ERROR DECODING CIPHER. " << endl;
 	}
-	memcpy(cipher, strcipher, stoi(cipherSize));
+	memcpy(cipher, strcipher, blockSize);
 
 	//get cipherlen
 	getline(ss, cipherLen, ';');
+
+	delete[] strhmac;
+	delete[] striv;
+	delete[] strcipher;
 	
 	return 0;
 }

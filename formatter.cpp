@@ -21,22 +21,28 @@ string Formatter::getFormattedData(string hash, string encalgo,
 	int hmacSize = EVP_EncodeBlock(strhmac, hmac, hmacLen);
 	if(hmacSize == -1) {
 		cout << "ERROR ENCODING HMAC. " << endl;
+		exit(EXIT_FAILURE);
 	}
 
+	// Get b64encoding of iv in string
 	size = 4*ceil(((double)ivLen/3));
 	unsigned char *striv = new unsigned char[size+1];
 	int ivSize = EVP_EncodeBlock(striv, iv, ivLen);
 	if(ivSize == -1) {
 		cout << "ERROR ENCODING IV. " << endl;
+		exit(EXIT_FAILURE);
 	}
 
+	// Get b64encoding of cipher in string
 	size = 4*ceil(((double)cipherLen/3));
 	unsigned char *strcipher = new unsigned char[size+1];
 	int cipherSize = EVP_EncodeBlock(strcipher, ciphertext, cipherLen);
 	if(cipherSize == -1) {
 		cout << "ERROR ENCODING CIPHER. " << endl;
+		exit(EXIT_FAILURE);
 	}
 
+	// Concatenate all relevant values
 	stringstream ss;
 	ss << hash << ";" << encalgo << ";" << hmacSize << ";" << ivSize << ";" << cipherSize << ";" << cipherLen << ";" << strhmac << ";" << striv << ";" << strcipher;
 	string formattedString = ss.str();
@@ -51,10 +57,13 @@ string Formatter::getFormattedData(string hash, string encalgo,
 void Formatter::getFormattedDataSizes(string data, int* ivLen, int* cipherLen) {
 	stringstream ss(data);
 	string temp;
+
+	// Skip first 3 values
 	getline(ss, temp, ';');
 	getline(ss, temp, ';');
 	getline(ss, temp, ';');
 
+	// Get iv and cipher length
 	string ivSize, cipherSize;
 	getline(ss, ivSize, ';');
 	getline(ss, cipherSize, ';');
@@ -84,19 +93,19 @@ int Formatter::parseFormattedData(string data,
 	//get enc algo type
 	getline(ss, encalgo, ';');
 
-	//get enc algo type
+	//get b64 hmac sie
 	getline(ss, hmacSize, ';');
 
-	//get enc algo type
+	//get b64 ivSize
 	getline(ss, ivSize, ';');
 
-	//get enc algo type
+	//get b64 cipherSize
 	getline(ss, cipherSize, ';');
 
-	//get cipherlen
+	//get cipher length
 	getline(ss, cipherLen, ';');
 
-	//get hmac
+	//get hmac and copy to passed in buffer
 	getline(ss, temp, ';');
 	unsigned char *strhmac = new unsigned char[stoi(hmacSize)+1];
 	blockSize = EVP_DecodeBlock(strhmac, (unsigned char*)temp.c_str(), stoi(hmacSize));
@@ -105,7 +114,7 @@ int Formatter::parseFormattedData(string data,
 	}
 	memcpy(hmac, strhmac, blockSize);
 
-	//get iv
+	//get iv and copy to passed in buffer
 	getline(ss, temp, ';');
 	unsigned char *striv = new unsigned char[stoi(ivSize)+1];
 	blockSize = EVP_DecodeBlock(striv, (unsigned char*)temp.c_str(), stoi(ivSize));
@@ -114,7 +123,7 @@ int Formatter::parseFormattedData(string data,
 	}
 	memcpy(iv, striv, blockSize);
 
-	//get cipher
+	//get cipher and copy to passed in buffer
 	getline(ss, temp, ';');
 	unsigned char *strcipher = new unsigned char[stoi(cipherSize)+1];
 	blockSize = EVP_DecodeBlock(strcipher, (unsigned char*)temp.c_str(), stoi(cipherSize));

@@ -37,11 +37,15 @@ int Cipher::encrypt(unsigned char* plaintext, unsigned char* ciphertext, int exp
 	unsigned char *key = cipherkey;
 	unsigned char *iv = cipheriv;
 
+	// Buffer to store ciphertext
 	unsigned char *res = new unsigned char[expectedLen];
 	int ciphertext_len;
+
+	// Get ciphertext and its length
 	ciphertext_len = encryptStuff(plaintext, strlen ((char *)plaintext), key, iv,
                             algotype, res);
 
+	// Copy ciphertext to passed in buffer
 	memcpy(ciphertext, res, ciphertext_len);
 	delete[] res;
 
@@ -52,12 +56,16 @@ int Cipher::decrypt(unsigned char* plaintext, unsigned char* ciphertext, int cip
 	unsigned char *key = cipherkey;
 	unsigned char *iv = cipheriv;
 
+	// Buffer to store plaintext
 	unsigned char *res = new unsigned char[ciphertextLen];
 	int decryptedtext_len;
+
+	// Get plaintext and its length
 	decryptedtext_len = decryptStuff(ciphertext, ciphertextLen, key, iv,
     						algotype, res);
 	memcpy(plaintext, res, decryptedtext_len);
 
+	// Copy plaintext to passed in buffer
 	// make sure the string is null terminated to avoid reading too much data
 	plaintext[decryptedtext_len] = '\0';
 	delete[] res;
@@ -66,9 +74,8 @@ int Cipher::decrypt(unsigned char* plaintext, unsigned char* ciphertext, int cip
 }
 
 int Cipher::getHmac(unsigned char* ciphertext, int ciphertextLen, unsigned char* hmac) {
-	//todo add iv to cipher
-	unsigned char* key = hmackey;
 
+	unsigned char* key = hmackey;
   	unsigned char* result = new unsigned char[EVP_MAX_MD_SIZE];
 	unsigned int resultLen = 0;
 
@@ -76,9 +83,11 @@ int Cipher::getHmac(unsigned char* ciphertext, int ciphertextLen, unsigned char*
 	unsigned char* data = new unsigned char[ivSize + ciphertextLen];
 	memcpy(data, cipheriv, ivSize);
 	memcpy(data+ivSize, ciphertext, ciphertextLen);
- 
+	
+	// Get HMAC of data
   	HMAC(EVP_sha256(), key, keySize, data, ciphertextLen, result, &resultLen);
 
+	// Copy result to passed in buffer
 	memcpy(hmac, result, resultLen);
 
 	delete[] result;

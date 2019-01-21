@@ -1,7 +1,8 @@
 #include <iostream>
+#include <fstream>
+#include <sstream> 
 #include <string>
 #include <cstring>
-#include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <keygen.h>
 #include <cipher.h>
@@ -12,29 +13,59 @@
 
 using namespace std;
 
+/* 
+ * Get master, hmac, and cipher keys
+ * Returns 0 on success
+ * Ends program with error message on failure
+ * pwd: char array containing password
+ * shaver: hash algorithm to use
+ * KEY_SIZE: desired cipher key size
+ * masterKey: will hold masterKey on return
+ * hmacKey: will hold hmacKey on return
+ * cipherKey: will hold cipherKey on return
+ */
 int getKeys(char* pwd, string shaver, int KEY_SIZE, unsigned char* masterKey, unsigned char* hmacKey, unsigned char* cipherKey) {
 	int status;
 	
-	/* ===== GETTING MASTER KEY ===== */
+	// Get master key
 	unsigned char* key = new unsigned char[MASTER_KEY_LEN];
 	status = Keygen::getMasterKey(pwd, MASTER_KEY_LEN, shaver, key);
+	if(status == -1) {
+		cout << "Failed to get master key." << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	// Convert master key to char* from unsigned char*, and copy it to new variable
 	char* thisKey = new char[MASTER_KEY_LEN+1]();
 	memcpy(thisKey, key, MASTER_KEY_LEN);
 
-	/* ===== GETTING HMAC KEY ===== */
+	// Get hmac key
 	status = Keygen::getHMACKey(thisKey, MASTER_KEY_LEN, shaver, hmacKey);
+	if(status == -1) {
+		cout << "Failed to get HMAC key." << endl;
+		exit(EXIT_FAILURE);
+	}
 
-	/* ===== GETTING CIPHER KEY ===== */
+	// Get cipher key
 	status = Keygen::getEncryptKey(thisKey, KEY_SIZE, shaver, cipherKey);
+	if(status == -1) {
+		cout << "Failed to get cipher key." << endl;
+		exit(EXIT_FAILURE);
+	}
 
 	memcpy(masterKey, thisKey, MASTER_KEY_LEN);
 
 	delete[] key;
 	delete[] thisKey;
 
-	return 0;
+	return status;
 }
 
+/* 
+ * Check if hashtype is valid
+ * Returns hash type on success
+ * Ends program with error message on failure
+ */
 string getHashType(string hashver) {
 	if(hashver == "sha256") {
 	} else if(hashver == "sha512") {
@@ -46,6 +77,14 @@ string getHashType(string hashver) {
 	return hashver;
 }
 
+/*
+ * Check if encalgo is a valid cipher type, and assigns key, block, and iv size based on cipher type
+ * Returns cipher type on success
+ * Ends program with error message on failure
+ * KEY_SIZE: will hold cipher key size on success
+ * BLOCK_SIZE: will hold block size on success
+ * IV_SIZE: will hold iv size on success
+ */
 string getCipherType(string encalgo, int* KEY_SIZE, int* BLOCK_SIZE, int* IV_SIZE) {
 	if(encalgo == "aes128") {
 		*KEY_SIZE = Cipher::aes128KeySize;
@@ -67,29 +106,44 @@ string getCipherType(string encalgo, int* KEY_SIZE, int* BLOCK_SIZE, int* IV_SIZ
 	return encalgo;
 }
 
+/*
+ * Gets parameters to create cipher object based on user input
+ * password: holds entered password on success
+ * KEY_SIZE: will hold cipher key size on success
+ * BLOCK_SIZE: will hold block size on success
+ * IV_SIZE: will hold iv size on success
+ * hashver: will hold hash type on success
+ * cipher: will hold cipher type on success
+ */
 void getUserParams(string* password, int* KEY_SIZE, int* BLOCK_SIZE, int* IV_SIZE, string* hashver, string* cipher) {
+	// Get user password
 	string mypass;
-	cout << "pass: ";
+	cout << "Enter password: ";
 	cin >> mypass;
 	*password = mypass;
 
 	// sha256 or sha512 for pbkdf?
 	string shaver;
-	cout << "which sha for pbkdf: ";
+	cout << "SHA version for PBKDF (SHA256, SHA512): ";
 	cin >> shaver;
 	*hashver = getHashType(shaver);
 
 	// encryption method?
 	string encalgo;
-	cout << "which cipher: ";
+	cout << "Cipher type (AES128, AES256, 3DES): ";
 	cin >> encalgo;
 	*cipher = getCipherType(encalgo, KEY_SIZE, BLOCK_SIZE, IV_SIZE);
 
 	return;
 }
 
+/* 
+ * Encrypt data based on parameters entered by user
+ * Returns formatted string with metadata on success
+ * Ends program with error message on failure
+ */ 
 string encryptData() {
-	// Get user params
+	// Get user input parameters
 	string password, shaver, encalgo;
 	int KEY_SIZE = 0;
 	int BLOCK_SIZE = 0;
@@ -105,40 +159,31 @@ string encryptData() {
 
 	// String to encrypt
 	string mytext;
-	cout << "what to encrypt? ";
+	cout << "What to encrypt: ";
 	cin.ignore();
 	getline(cin, mytext);
 	unsigned char *plaintext = new unsigned char[mytext.length() + 1];
-	strcpy( (char* )plaintext, mytext.c_str());
+	strcpy((char* )plaintext, mytext.c_str());
 
 	// Generate random IV
 	unsigned char *iv = new unsigned char[IV_SIZE];
 	if (!RAND_bytes(iv, IV_SIZE)) {
-    	/* OpenSSL reports a failure, act accordingly */
 		cout << "Error generating IV for encryption" << endl;
 		exit(EXIT_FAILURE);
 	}
-	/*cout << "iv is: " << endl;
-	BIO_dump_fp (stdout, (const char *)iv, IV_SIZE);
-	cout << endl;*/
 
 	// Create cipher object
 	Cipher cipher(cipherKey, hmacKey, iv, encalgo);
 
-	// Create ciphertext from plaintext
-	int ciphertext_len = (strlen((char*)plaintext) + BLOCK_SIZE) - (strlen((char*)plaintext)%BLOCK_SIZE);
+	// Encrypt plaintext
+	// Use (n + block) - (n % block) to predict ciphertext length, where n = plaintext length and block = block size
+	int ciphertext_len = (strlen((char*)plaintext) + BLOCK_SIZE) - (strlen((char*)plaintext) % BLOCK_SIZE);
 	unsigned char *ciphertext = new unsigned char[ciphertext_len];
 	int actualCipherLength = cipher.encrypt(plaintext, ciphertext, ciphertext_len);
-	/*cout << "cipher text is: " << endl;
-	BIO_dump_fp (stdout, (const char *)ciphertext, actualCipherLength);
-	cout << endl;*/
 
 	// Create HMAC of IV+cipher
 	unsigned char *hmac = new unsigned char[HMAC_SIZE];
 	int hmacLen = cipher.getHmac(ciphertext, actualCipherLength, hmac);
-	/*cout << "hmac is: " << endl;
-	BIO_dump_fp (stdout, (const char *)hmac, hmacLen);
-	cout << endl;*/
 
 	// Get formatted string
 	string formattedString = Formatter::getFormattedData(shaver, encalgo, hmacLen, actualCipherLength, IV_SIZE,
@@ -155,14 +200,18 @@ string encryptData() {
 	return formattedString;
 }
 
+/*
+ * Given formatted string with metadata, extract header information and decrypt cipher
+ * Return decrypted plaintext on success
+ */
 string decryptData(string formattedString) {
 	int ivLen = 0;
 	int cipherLen = 0;
 
-	// Get ivLen and cipherLen for allocating buffers
+	// Get ivLen and cipherLen for allocating buffers for the next step
 	Formatter::getFormattedDataSizes(formattedString, &ivLen, &cipherLen);
 
-	// Get parameters from formatted string
+	// Break apart formatted string and extract metadata and ciphertext to allocated buffers
 	string hashver;
 	string cipher;
 	unsigned char* hmac = new unsigned char[HMAC_SIZE+2];
@@ -171,16 +220,16 @@ string decryptData(string formattedString) {
 	string cipherSize;
 	int test = Formatter::parseFormattedData(formattedString, hashver, cipher, hmac, iv, ciphertext, cipherSize);
 
-	// Get parameters from hashtype and ciphertype
+	// Get parameters from extracted hashtype and ciphertype
 	int KEY_SIZE = 0;
 	int BLOCK_SIZE = 0;
 	int IV_SIZE = 0;
 	string shaver = getHashType(hashver);
 	string encalgo = getCipherType(cipher, &KEY_SIZE, &BLOCK_SIZE, &IV_SIZE);
 
-	// Get password
+	// Get user password
 	string mypass;
-	cout << "pass: ";
+	cout << "Password: ";
 	cin >> mypass;
 	char *pwd = &mypass[0];
 
@@ -190,7 +239,7 @@ string decryptData(string formattedString) {
 	unsigned char* cipherKey = new unsigned char[KEY_SIZE];
 	getKeys(pwd, shaver, KEY_SIZE, masterKey, hmacKey, cipherKey);
 
-	// Get cipher object and decrypt
+	// Create cipher object and decrypt
 	Cipher newcipher(cipherKey, hmacKey, iv, encalgo);
 	unsigned char *text = new unsigned char[stoi(cipherSize)];
 	int status = newcipher.decrypt(text, ciphertext, stoi(cipherSize));
@@ -210,24 +259,53 @@ string decryptData(string formattedString) {
 
 int main()
 {
-	//encrypt or decrypt data?
 	string choice, result;
-	cout << "encrypt or decrypt: ";
+	cout << "Encrypt or decrypt: ";
 	cin >> choice;
 
 	if(choice == "encrypt") {
 		result = encryptData();
+
+		string data;
+		cout << "Enter filename to save results in: ";
+		cin >> data;
+
+		// Writing to file
+		ofstream outfile(data);
+		if(!outfile) {
+			cout << "Can't open file." << endl;
+			exit(1);
+		}
+		outfile << result << endl;
+		outfile.close();
+
+		cout << "Success." << endl;
+
 	} else if(choice == "decrypt") {
 		string data;
-		cout << "enter formatted data: ";
+		cout << "Enter file name: ";
 		cin >> data;
-		result = decryptData(data);
+
+		// Reading from file
+		ifstream infile(data);
+		if(!infile) {
+			cout << "Can't open file." << endl;
+			exit(1);
+		}
+		stringstream buffer;
+		buffer << infile.rdbuf();
+
+		string formattedString = buffer.str();
+		result = decryptData(formattedString);
+
+		infile.close();
+
+		cout << "Decrypted cipher: " << result << endl;
+
 	} else {
 		cout << "invalid option" << endl;
 		exit(EXIT_FAILURE);
 	}
-
-	cout << result << endl;
 
     return 0;
 }

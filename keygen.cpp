@@ -4,7 +4,7 @@
 #include <openssl/evp.h>
 #include <iostream>
 
-#define ITERATION 1
+#define ITERATION 100000
 
 using namespace std;
 

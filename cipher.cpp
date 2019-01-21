@@ -96,6 +96,18 @@ int Cipher::getHmac(unsigned char* ciphertext, int ciphertextLen, unsigned char*
 	return resultLen;
 }
 
+bool Cipher::verifyHmac(unsigned char* ciphertext, int ciphertextLen, unsigned char* hmac) {
+
+	unsigned char* testhmac = new unsigned char[hmacSize];
+	int result = getHmac(ciphertext, ciphertextLen, testhmac);
+
+	bool isEqual = (memcmp(testhmac, hmac, hmacSize) == 0);
+
+	delete[] testhmac;
+
+	return isEqual;
+}
+
 int Cipher::decryptStuff(unsigned char *ciphertext, int ciphertext_len, unsigned char *key,
   unsigned char *iv, const EVP_CIPHER* algo, unsigned char *plaintext) {
 	EVP_CIPHER_CTX *ctx;

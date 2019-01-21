@@ -239,8 +239,19 @@ string decryptData(string formattedString) {
 	unsigned char* cipherKey = new unsigned char[KEY_SIZE];
 	getKeys(pwd, shaver, KEY_SIZE, masterKey, hmacKey, cipherKey);
 
-	// Create cipher object and decrypt
+	// Create cipher object
 	Cipher newcipher(cipherKey, hmacKey, iv, encalgo);
+
+	// Check if hmac hash is corrupted
+	bool correctHmac = false;
+	correctHmac = newcipher.verifyHmac(ciphertext, stoi(cipherSize), hmac);
+	if(!correctHmac) {
+		cout << "HMAC values do not match." << endl;
+		exit(EXIT_FAILURE);
+	} else {
+		cout << "HMAC value verified." << endl;
+	}
+
 	unsigned char *text = new unsigned char[stoi(cipherSize)];
 	int status = newcipher.decrypt(text, ciphertext, stoi(cipherSize));
 

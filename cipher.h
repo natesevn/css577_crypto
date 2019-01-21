@@ -44,7 +44,15 @@ class Cipher {
 		 * @hmac: buffer for resulting hmac
 		 */
 		int getHmac(unsigned char* ciphertext, int ciphertextLen, unsigned char* hmac);
-		int verifyHmac(unsigned char* ciphertext, unsigned char* hash);
+
+		/*
+		 * Check if passed in HMAC matches calculated HMAC
+		 * Returns True if they match, False otherwise
+		 * @ciphertext: ciphertext for HMAC
+		 * @ciphertextLen: length of ciphertext
+		 * @hash: HMAC hash to compare it to
+		 */
+		bool verifyHmac(unsigned char* ciphertext, int ciphertextLen, unsigned char* hash);
 
 		// Constants for parameters of various cipher types
 		static const int aes128KeySize = 16;
@@ -55,6 +63,8 @@ class Cipher {
 		static const int desKeySize = 24;
 		static const int desBlockSize = 8;
 		static const int desIVSize = 8;
+
+		static const int hmacSize = 32;
 
 	private:
 

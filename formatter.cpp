@@ -9,30 +9,6 @@
 
 using namespace std;
 
-//https://nachtimwald.com/2017/11/18/base64-encode-and-decode-in-c/
-size_t b64_decoded_size(const char *in)
-{
-	size_t len;
-	size_t ret;
-	size_t i;
-
-	if (in == NULL)
-		return 0;
-
-	len = strlen(in);
-	ret = len / 4 * 3;
-
-	for (i=len; i-->0; ) {
-		if (in[i] == '=') {
-			ret--;
-		} else {
-			break;
-		}
-	}
-
-	return ret;
-}
-
 string Formatter::getFormattedData(string hash, string encalgo,
 						int hmacLen, int cipherLen, int ivLen,
 						unsigned char* hmac, unsigned char* ciphertext, unsigned char* iv) {
@@ -62,7 +38,7 @@ string Formatter::getFormattedData(string hash, string encalgo,
 	}
 
 	stringstream ss;
-	ss << hash << ";" << encalgo << ";" << hmacSize << ";" << ivSize << ";" << cipherSize << ";" << strhmac << ";" << striv << ";" << strcipher << ";" << cipherLen;
+	ss << hash << ";" << encalgo << ";" << hmacSize << ";" << ivSize << ";" << cipherSize << ";" << cipherLen << ";" << strhmac << ";" << striv << ";" << strcipher;
 	string formattedString = ss.str();
 
 	delete[] strhmac;
@@ -70,6 +46,23 @@ string Formatter::getFormattedData(string hash, string encalgo,
 	delete[] strcipher;
 
 	return formattedString;
+}
+
+void Formatter::getFormattedDataSizes(string data, int* ivLen, int* cipherLen) {
+	stringstream ss(data);
+	string temp;
+	getline(ss, temp, ';');
+	getline(ss, temp, ';');
+	getline(ss, temp, ';');
+
+	string ivSize, cipherSize;
+	getline(ss, ivSize, ';');
+	getline(ss, cipherSize, ';');
+
+	*ivLen = stoi(ivSize);
+	*cipherLen = stoi(cipherSize);
+
+	return;
 }
 
 int Formatter::parseFormattedData(string data,
@@ -100,6 +93,9 @@ int Formatter::parseFormattedData(string data,
 	//get enc algo type
 	getline(ss, cipherSize, ';');
 
+	//get cipherlen
+	getline(ss, cipherLen, ';');
+
 	//get hmac
 	getline(ss, temp, ';');
 	unsigned char *strhmac = new unsigned char[stoi(hmacSize)+1];
@@ -126,9 +122,6 @@ int Formatter::parseFormattedData(string data,
 		cout << "ERROR DECODING CIPHER. " << endl;
 	}
 	memcpy(cipher, strcipher, blockSize);
-
-	//get cipherlen
-	getline(ss, cipherLen, ';');
 
 	delete[] strhmac;
 	delete[] striv;

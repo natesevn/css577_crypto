@@ -36,7 +36,7 @@ class Cipher {
 		
 		const EVP_CIPHER* algotype;
 
-		void handleErrors(void);
+		void handleErrors(int status);
 		
 		int encryptStuff(unsigned char *plaintext, int plaintext_len, unsigned char *key,
   unsigned char *iv, const EVP_CIPHER* algo, unsigned char *ciphertext);

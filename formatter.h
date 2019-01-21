@@ -12,6 +12,7 @@ class Formatter {
 				int hmacLen, int cipherLen, int ivLen,
 				unsigned char* hmac, unsigned char* ciphertext, unsigned char* iv);
 
+		static void getFormattedDataSizes(string data, int* ivLen, int* cipherLen);
 		static int parseFormattedData(string formattedData,
 				string& hashver, string& encalgo,
 				unsigned char* hmac, unsigned char* cipher, unsigned char* iv, 

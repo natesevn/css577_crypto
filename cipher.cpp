@@ -96,20 +96,20 @@ int Cipher::decryptStuff(unsigned char *ciphertext, int ciphertext_len, unsigned
 
 	// Create and initialise the context 
   	if(!(ctx = EVP_CIPHER_CTX_new())) 
-	  	handleErrors();
+	  	handleErrors(0);
 
 	// Initialize decryption operation
 	if(1 != EVP_DecryptInit_ex(ctx, algo, NULL, key, iv))
-    	handleErrors();
+    	handleErrors(0);
 
 	// Decrypt given message to provided output
 	if(1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
-    	handleErrors();
+    	handleErrors(0);
   	plaintext_len = len;
 
 	// Finalize decryption
 	if(1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len)) 
-		handleErrors();
+		handleErrors(0);
   	plaintext_len += len;
 
 	// Delete context object
@@ -127,20 +127,20 @@ int Cipher::encryptStuff(unsigned char *plaintext, int plaintext_len, unsigned c
 
 	// Create and initialise the context 
   	if(!(ctx = EVP_CIPHER_CTX_new())) 
-		handleErrors();
+		handleErrors(1);
 
 	// Initialize encryption operation
 	if(1 != EVP_EncryptInit_ex(ctx, algo, NULL, key, iv))
-    	handleErrors();
+    	handleErrors(1);
 
 	// Encrypt given message to provided output
 	if(1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
-    	handleErrors();
+    	handleErrors(1);
 	ciphertext_len = len;
 
 	// Finalize encryption
 	if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len)) 
-		handleErrors();
+		handleErrors(1);
 	ciphertext_len += len;
 
 	// Delete context object
@@ -149,7 +149,16 @@ int Cipher::encryptStuff(unsigned char *plaintext, int plaintext_len, unsigned c
 	return ciphertext_len;
 }
 
-void Cipher::handleErrors(void) {
-  	ERR_print_errors_fp(stderr);
-  	abort();
+void Cipher::handleErrors(int status) {
+
+	if(status == 0) {
+		cout << "Something went wrong with decryption. Check password and try again." << endl;
+		exit(EXIT_FAILURE);
+	} else if (status == 1) {
+		cout << "Something went wrong with the encryption." << endl;
+		exit(EXIT_FAILURE);
+	} else {
+  		ERR_print_errors_fp(stderr);
+		exit(EXIT_FAILURE);
+	}
 }

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream> 
+#include <algorithm>
 #include <string>
 #include <cstring>
 #include <openssl/rand.h>
@@ -67,6 +68,7 @@ int getKeys(char* pwd, string shaver, int KEY_SIZE, unsigned char* masterKey, un
  * Ends program with error message on failure
  */
 string getHashType(string hashver) {
+	transform(hashver.begin(), hashver.end(), hashver.begin(), ::tolower);
 	if(hashver == "sha256") {
 	} else if(hashver == "sha512") {
 	} else {
@@ -86,6 +88,7 @@ string getHashType(string hashver) {
  * IV_SIZE: will hold iv size on success
  */
 string getCipherType(string encalgo, int* KEY_SIZE, int* BLOCK_SIZE, int* IV_SIZE) {
+	transform(encalgo.begin(), encalgo.end(), encalgo.begin(), ::tolower);
 	if(encalgo == "aes128") {
 		*KEY_SIZE = Cipher::aes128KeySize;
 		*BLOCK_SIZE = Cipher::aesBlockSize;
@@ -273,6 +276,7 @@ int main()
 	string choice, result;
 	cout << "Encrypt or decrypt: ";
 	cin >> choice;
+	transform(choice.begin(), choice.end(), choice.begin(), ::tolower);
 
 	if(choice == "encrypt") {
 		result = encryptData();

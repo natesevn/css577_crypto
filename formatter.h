@@ -11,13 +11,15 @@ class Formatter {
 		/*
 		 * Get formatted string with metadata
 		 * Returns b64 encoded data with metadata in the following format:
-		 * hashtype || ciphertype || b64 hmac size || b64 iv size || b64 cipher size || original ciphertext length || hmac || iv || ciphertext;		
+		 * hashtype || ciphertype || b64 salt size || b64 hmac size || b64 iv size || b64 cipher size || original ciphertext length || salt || hmac || iv || ciphertext;		
 		 * Prints error message and exits program upon failure
 		 * @hash: hash algo used
 		 * @encalgo: cipher algo used
+		 * @saltLen: length of mastersalt
 		 * @hmacLen: length of original hmac
 		 * @cipherLen: length of original ciphertext
 		 * @ivLen: length of original iV
+		 * @masterSalt: salt used for master key derivation
 		 * @hmac: hmac of cipher+iv
 		 * @ciphertext: ciphertext
 		 * @iv: iv
@@ -41,6 +43,7 @@ class Formatter {
 		 * @formattedData: formatted string
 		 * @hashver: buffer for resulting hash algorithm used on success
 		 * @encalgo: buffer for resulting cipher type used on success
+		 * @masterSalt: buffer for resulting salt on success
 		 * @hmac: buffer for resulting hmac on success
 		 * @cipher: buffer for resulting cipher on success
 		 * @iv: buffer for resulting iv on success

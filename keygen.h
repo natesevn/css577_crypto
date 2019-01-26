@@ -13,8 +13,9 @@ class Keygen {
 		 * @keysize: desired size of master key
 		 * @shaver: hash algorithm to use
 		 * @key: buffer for resulting master key
+		 * @masterSalt: randomly generated salt for key derivation
 		 */
-		static int getMasterKey(char pwd[], size_t keysize, string shaver, unsigned char* key);
+		static int getMasterKey(char pwd[], size_t keysize, string shaver, unsigned char* key, unsigned char* masterSalt);
 
 		/* 
 		 *  Helper function to get HMAC key based on parameters

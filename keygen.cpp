@@ -40,15 +40,14 @@ int Keygen::getKey(char pwd[], unsigned char salt[], size_t keysize, int iter, s
 	return status;
 }
 
-int Keygen::getMasterKey(char pwd[], size_t keysize, string shaver, unsigned char* key) {
+int Keygen::getMasterKey(char pwd[], size_t keysize, string shaver, unsigned char* key, unsigned char* masterSalt) {
 	// Buffer to hold the master key and salt
     unsigned char *out = new unsigned char[keysize]; 
-    unsigned char salt_value[] = {'s','a','l','t'};
 
 	int result = 0;
 
 	// Get master key
-	result = getKey(pwd, salt_value, keysize, ITERATION, shaver, out);
+	result = getKey(pwd, masterSalt, keysize, ITERATION, shaver, out);
 
 	// Copy master key to passed in key buffer
 	memcpy(key, out, keysize);

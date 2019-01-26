@@ -24,8 +24,8 @@ class Formatter {
 		 */
 		static string getFormattedData(
 				string hash, string encalgo,
-				int hmacLen, int cipherLen, int ivLen,
-				unsigned char* hmac, unsigned char* ciphertext, unsigned char* iv);
+				int saltLen, int hmacLen, int cipherLen, int ivLen,
+				unsigned char* masterSalt, unsigned char* hmac, unsigned char* ciphertext, unsigned char* iv);
 
 		/*
 		 * Get b64 sizes of iv and cipher for buffer allocation
@@ -48,7 +48,7 @@ class Formatter {
 		 */
 		static int parseFormattedData(string formattedData,
 				string& hashver, string& encalgo,
-				unsigned char* hmac, unsigned char* cipher, unsigned char* iv, 
+				unsigned char* masterSalt, unsigned char* hmac, unsigned char* cipher, unsigned char* iv, 
 				string& cipherLen);
 
 };

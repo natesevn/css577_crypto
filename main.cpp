@@ -11,6 +11,7 @@
 
 #define MASTER_KEY_LEN  32
 #define HMAC_SIZE 32
+#define SALT_LENGTH 8
 
 using namespace std;
 
@@ -25,12 +26,12 @@ using namespace std;
  * hmacKey: will hold hmacKey on return
  * cipherKey: will hold cipherKey on return
  */
-int getKeys(char* pwd, string shaver, int KEY_SIZE, unsigned char* masterKey, unsigned char* hmacKey, unsigned char* cipherKey) {
+int getKeys(char* pwd, string shaver, int KEY_SIZE, unsigned char* masterKey, unsigned char* hmacKey, unsigned char* cipherKey, unsigned char* masterSalt) {
 	int status;
 	
 	// Get master key
 	unsigned char* key = new unsigned char[MASTER_KEY_LEN];
-	status = Keygen::getMasterKey(pwd, MASTER_KEY_LEN, shaver, key);
+	status = Keygen::getMasterKey(pwd, MASTER_KEY_LEN, shaver, key, masterSalt);
 	if(status == -1) {
 		cout << "Failed to get master key." << endl;
 		exit(EXIT_FAILURE);
@@ -154,11 +155,18 @@ string encryptData() {
 	getUserParams(&password, &KEY_SIZE, &BLOCK_SIZE, &IV_SIZE, &shaver, &encalgo);
 	char *pwd = &password[0];
 
+	// Generate salt
+	unsigned char *masterSalt = new unsigned char[SALT_LENGTH];
+	if (!RAND_bytes(masterSalt, SALT_LENGTH)) {
+		cout << "Error generating salt for keys" << endl;
+		exit(EXIT_FAILURE);
+	}
+
 	// Get required keys
 	unsigned char* masterKey = new unsigned char[MASTER_KEY_LEN];
 	unsigned char* hmacKey = new unsigned char[MASTER_KEY_LEN];
 	unsigned char* cipherKey = new unsigned char[KEY_SIZE];
-	getKeys(pwd, shaver, KEY_SIZE, masterKey, hmacKey, cipherKey);
+	getKeys(pwd, shaver, KEY_SIZE, masterKey, hmacKey, cipherKey, masterSalt);
 
 	// String to encrypt
 	string mytext;
@@ -189,9 +197,10 @@ string encryptData() {
 	int hmacLen = cipher.getHmac(ciphertext, actualCipherLength, hmac);
 
 	// Get formatted string
-	string formattedString = Formatter::getFormattedData(shaver, encalgo, hmacLen, actualCipherLength, IV_SIZE,
-		hmac, ciphertext, iv);
+	string formattedString = Formatter::getFormattedData(shaver, encalgo, SALT_LENGTH, hmacLen, actualCipherLength, IV_SIZE,
+		masterSalt, hmac, ciphertext, iv);
 
+	delete[] masterSalt;
 	delete[] masterKey;
 	delete[] hmacKey; 
 	delete[] cipherKey;
@@ -217,12 +226,13 @@ string decryptData(string formattedString) {
 	// Break apart formatted string and extract metadata and ciphertext to allocated buffers
 	string hashver;
 	string cipher;
+	unsigned char* masterSalt = new unsigned char[SALT_LENGTH+2];
 	unsigned char* hmac = new unsigned char[HMAC_SIZE+2];
 	unsigned char* iv = new unsigned char[ivLen+2];
 	unsigned char* ciphertext = new unsigned char[cipherLen+2];
 	string cipherSize;
-	int test = Formatter::parseFormattedData(formattedString, hashver, cipher, hmac, iv, ciphertext, cipherSize);
-
+	int test = Formatter::parseFormattedData(formattedString, hashver, cipher, masterSalt, hmac, iv, ciphertext, cipherSize);
+	
 	// Get parameters from extracted hashtype and ciphertype
 	int KEY_SIZE = 0;
 	int BLOCK_SIZE = 0;
@@ -240,7 +250,7 @@ string decryptData(string formattedString) {
 	unsigned char* masterKey = new unsigned char[MASTER_KEY_LEN];
 	unsigned char* hmacKey = new unsigned char[HMAC_SIZE];
 	unsigned char* cipherKey = new unsigned char[KEY_SIZE];
-	getKeys(pwd, shaver, KEY_SIZE, masterKey, hmacKey, cipherKey);
+	getKeys(pwd, shaver, KEY_SIZE, masterKey, hmacKey, cipherKey, masterSalt);
 
 	// Create cipher object
 	Cipher newcipher(cipherKey, hmacKey, iv, encalgo);
